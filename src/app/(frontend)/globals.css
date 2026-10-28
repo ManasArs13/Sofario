@@ -1,0 +1,78 @@
+@import 'tailwindcss';
+
+/* Палитра и шрифты из логотипа SOFARIO */
+@theme {
+  --color-cocoa: #4a3626;
+  --color-cocoa-light: #6b4f3a;
+  --color-sand: #c9ae90;
+  --color-caramel: #9c6b45;
+  --color-cream: #f5efe6;
+  --font-sans: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+  /* Заголовки (есть кириллица) */
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  /* Только для слова SOFARIO — в Marcellus нет кириллицы */
+  --font-brand: 'Marcellus', 'Cormorant Garamond', Georgia, serif;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-cocoa);
+}
+
+h1,
+h2 {
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.container-site {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 1200px;
+  padding-inline: 16px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 14px 28px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: background-color 0.15s, color 0.15s;
+}
+.btn-primary {
+  background: var(--color-cocoa-light);
+  color: var(--color-cream);
+}
+.btn-primary:hover {
+  background: var(--color-cocoa);
+}
+.btn-light {
+  background: var(--color-sand);
+  color: var(--color-cocoa);
+}
+.btn-light:hover {
+  background: var(--color-cream);
+}
+.btn-ghost {
+  border: 1.5px solid var(--color-sand);
+  color: var(--color-cream);
+}
+.btn-ghost:hover {
+  background: var(--color-sand);
+  color: var(--color-cocoa);
+}
+
+.field {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid #ddd0bf;
+  background: #fff;
+  padding: 12px 14px;
+}
+.field:focus {
+  outline: 2px solid var(--color-caramel);
+  outline-offset: 1px;
+}

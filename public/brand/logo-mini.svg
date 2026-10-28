@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 84" width="420" height="84">
+  <g transform="translate(0 6) scale(0.6)">
+    <rect x="10" y="10" width="150" height="46" rx="23" fill="#6B4F3A"/>
+    <path d="M150 92 L170 38 C174 26 184 20 196 22 C208 24 212 34 209 46 L196 92 Z" fill="#6B4F3A"/>
+    <polygon points="120,54 140,25 176,25 160,54" fill="#C9AE90" stroke="#F5EFE6" stroke-width="4" stroke-linejoin="round"/>
+    <rect x="10" y="54" width="168" height="38" rx="19" fill="#6B4F3A" stroke="#F5EFE6" stroke-width="5"/>
+    <polygon points="40,90 51,90 37,113 30,113" fill="#6B4F3A"/>
+    <polygon points="183,90 194,90 205,113 198,113" fill="#6B4F3A"/>
+    <ellipse cx="112" cy="114" rx="104" ry="2" fill="#6B4F3A"/>
+  </g>
+  <text x="146" y="58" font-family="Marcellus, 'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="50" letter-spacing="5" fill="#4A3626">SOFARIO</text>
+</svg>
