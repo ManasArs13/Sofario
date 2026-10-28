@@ -1,17 +1,17 @@
 @import 'tailwindcss';
 
 /* Палитра и шрифты из логотипа SOFARIO */
-@theme {
+@theme inline {
   --color-cocoa: #4a3626;
   --color-cocoa-light: #6b4f3a;
   --color-sand: #c9ae90;
   --color-caramel: #9c6b45;
   --color-cream: #f5efe6;
-  --font-sans: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+  --font-sans: var(--font-montserrat), 'Segoe UI', Arial, sans-serif;
   /* Заголовки (есть кириллица) */
-  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-serif: var(--font-cormorant), Georgia, serif;
   /* Только для слова SOFARIO — в Marcellus нет кириллицы */
-  --font-brand: 'Marcellus', 'Cormorant Garamond', Georgia, serif;
+  --font-brand: var(--font-marcellus), Georgia, serif;
 }
 
 body {

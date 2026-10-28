@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Cormorant_Garamond, Marcellus, Montserrat } from 'next/font/google'
 import React from 'react'
 
 import { SiteFooter } from '@/components/SiteFooter'
@@ -6,6 +7,17 @@ import { SiteHeader } from '@/components/SiteHeader'
 import { getPayloadClient } from '@/lib/payload'
 
 import './globals.css'
+
+// Шрифты скачиваются при сборке и раздаются с нашего сервера — без запросов к Google у посетителей
+const montserrat = Montserrat({ subsets: ['latin', 'cyrillic'], variable: '--font-montserrat', display: 'swap' })
+const cormorant = Cormorant_Garamond({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['500', '600', '700'],
+  variable: '--font-cormorant',
+  display: 'swap',
+})
+// Только для слова SOFARIO: в Marcellus нет кириллицы
+const marcellus = Marcellus({ subsets: ['latin'], weight: '400', variable: '--font-marcellus', display: 'swap' })
 
 // Контент берётся из БД при каждом запросе — правки в админке видны сразу
 export const dynamic = 'force-dynamic'
@@ -25,15 +37,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const settings = await payload.findGlobal({ slug: 'site-settings' })
 
   return (
-    <html lang="ru">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Marcellus&family=Montserrat:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="ru" className={`${montserrat.variable} ${cormorant.variable} ${marcellus.variable}`}>
       <body className="flex min-h-screen flex-col antialiased">
         <SiteHeader phone={settings.phone} />
         <main className="flex-1">{children}</main>

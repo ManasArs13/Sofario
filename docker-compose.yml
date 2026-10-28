@@ -22,6 +22,8 @@ services:
 
   app:
     profiles: [prod]
+    # CD публикует образ в GitHub Container Registry; локально можно собрать: --build
+    image: ${APP_IMAGE:-ghcr.io/manasars13/sofario:latest}
     build: .
     restart: unless-stopped
     env_file: .env

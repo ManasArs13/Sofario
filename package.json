@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "SOFARIO — сайт цеха мягкой мебели с админкой на Payload CMS",
   "private": true,
+  "packageManager": "pnpm@10.18.3",
   "type": "module",
   "scripts": {
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",

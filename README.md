@@ -67,7 +67,53 @@ pnpm migrate:create add-something
 
 В продакшене миграции применяются автоматически при старте приложения.
 
-## Продакшен (VPS)
+## CI/CD (GitHub Actions)
+
+| Workflow | Когда | Что делает |
+|---|---|---|
+| [`ci.yml`](.github/workflows/ci.yml) | pull request и пуш в любую ветку, кроме `main` | ESLint, TypeScript, проверка, что `payload-types.ts` и import map перегенерированы; миграции на чистой БД; проверка, что изменения коллекций не забыли оформить миграцией; `next build` |
+| [`deploy.yml`](.github/workflows/deploy.yml) | пуш в `main` или ручной запуск | Те же проверки CI → Docker-образ в GitHub Container Registry (`ghcr.io/manasars13/sofario:latest` и `:sha-xxxxxxx`) → деплой на VPS по SSH → проверка, что сайт отвечает |
+
+Пока не задана переменная `DEPLOY_HOST`, шаг деплоя пропускается: образ собирается и публикуется, но на сервер не выкатывается.
+
+### Подготовка сервера (один раз)
+
+```bash
+# на VPS (Ubuntu): Docker + пользователь для деплоя
+curl -fsSL https://get.docker.com | sh
+sudo adduser --disabled-password deploy && sudo usermod -aG docker deploy
+sudo mkdir -p /opt/sofario && sudo chown deploy:deploy /opt/sofario
+# положите в /opt/sofario/.env боевые значения по образцу .env.example:
+# PAYLOAD_SECRET, POSTGRES_PASSWORD, NEXT_PUBLIC_SERVER_URL, TELEGRAM_*
+```
+
+Создайте SSH-ключ только для деплоя, публичную часть добавьте в `/home/deploy/.ssh/authorized_keys`.
+
+### Настройки в GitHub (Settings → Secrets and variables → Actions)
+
+| Тип | Имя | Значение |
+|---|---|---|
+| Variable | `DEPLOY_HOST` | IP или домен сервера |
+| Variable | `DEPLOY_USER` | `deploy` (по умолчанию) |
+| Variable | `DEPLOY_PATH` | `/opt/sofario` (по умолчанию) |
+| Variable | `SITE_URL` | `https://ваш-домен.ru` — для проверки после деплоя |
+| Secret | `DEPLOY_SSH_KEY` | приватный SSH-ключ |
+| Secret | `DEPLOY_SSH_PORT` | порт SSH, если не 22 |
+
+Деплой привязан к окружению `production`: в Settings → Environments можно включить ручное подтверждение каждой выкладки.
+
+### Откат
+
+На сервере в `/opt/sofario/.deployed-image` записан текущий образ. Откатиться на прошлую версию:
+
+```bash
+cd /opt/sofario
+APP_IMAGE=ghcr.io/manasars13/sofario:sha-<прошлый коммит> docker compose --profile prod up -d --no-build
+```
+
+Миграции БД откатываются отдельно (`pnpm payload migrate:down`), поэтому изменения схемы лучше делать обратно совместимыми.
+
+## Продакшен вручную (без GitHub)
 
 ```bash
 # на сервере: заполните .env (свой PAYLOAD_SECRET, POSTGRES_PASSWORD, NEXT_PUBLIC_SERVER_URL)

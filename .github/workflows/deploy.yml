@@ -1,0 +1,127 @@
+# Выкладка: пуш в main → проверки CI → Docker-образ в GitHub Container Registry → деплой на VPS по SSH.
+#
+# Настройка (Settings → Secrets and variables → Actions):
+#   Variables:  DEPLOY_HOST  — IP или домен сервера (пока не задан, шаг деплоя пропускается)
+#               DEPLOY_USER  — пользователь SSH (по умолчанию deploy)
+#               DEPLOY_PATH  — папка проекта на сервере (по умолчанию /opt/sofario)
+#               SITE_URL     — адрес сайта для проверки после деплоя, например https://sofario.ru
+#   Secrets:    DEPLOY_SSH_KEY — приватный SSH-ключ для входа на сервер
+#               DEPLOY_SSH_PORT — порт SSH, если не 22 (необязательно)
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
+  image:
+    name: Docker-образ
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.ref.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Точная ссылка на только что собранный образ — по ней деплоим (и по ней же можно откатиться)
+      - id: ref
+        run: |
+          repo=$(echo "ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "image=${repo}:sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: Деплой на сервер
+    needs: image
+    if: vars.DEPLOY_HOST != ''
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.SITE_URL }}
+    permissions:
+      contents: read
+      packages: read
+    env:
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/sofario' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Копирование docker-compose.yml на сервер
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER || 'deploy' }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_SSH_PORT || 22 }}
+          source: docker-compose.yml
+          target: ${{ env.DEPLOY_PATH }}
+
+      - name: Обновление контейнеров
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          APP_IMAGE: ${{ needs.image.outputs.image }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER || 'deploy' }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_SSH_PORT || 22 }}
+          envs: APP_IMAGE,GHCR_USER,GHCR_TOKEN,DEPLOY_PATH
+          script: |
+            set -eu
+            cd "$DEPLOY_PATH"
+            test -f .env || { echo "Нет $DEPLOY_PATH/.env — создайте его по образцу .env.example"; exit 1; }
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            export APP_IMAGE
+            docker compose --profile prod pull app
+            docker compose --profile prod up -d --no-build --remove-orphans
+            echo "$APP_IMAGE" > .deployed-image
+            docker logout ghcr.io
+            docker image prune -f
+
+      - name: Проверка, что сайт отвечает
+        if: vars.SITE_URL != ''
+        run: |
+          curl -fsS --retry 12 --retry-delay 5 --retry-all-errors -o /dev/null "${{ vars.SITE_URL }}"
+          curl -fsS --retry 6 --retry-delay 5 --retry-all-errors -o /dev/null "${{ vars.SITE_URL }}/admin"
+          echo "Сайт отвечает: ${{ vars.SITE_URL }}"

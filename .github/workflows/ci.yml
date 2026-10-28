@@ -1,0 +1,117 @@
+# Проверки кода: линтер, типы, актуальность сгенерированных файлов, миграции, сборка.
+# Запускается на pull request и пушах в любые ветки, кроме main
+# (для main те же проверки вызывает deploy.yml перед выкладкой).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: 22
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  lint:
+    name: Линтер и типы
+    runs-on: ubuntu-latest
+    env:
+      PAYLOAD_SECRET: ci-secret
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: ESLint
+        run: pnpm lint
+
+      - name: TypeScript
+        run: pnpm typecheck
+
+      - name: Сгенерированные типы и import map актуальны
+        run: |
+          pnpm generate:types
+          pnpm generate:importmap
+          if ! git diff --exit-code -- src/payload-types.ts 'src/app/(payload)/admin/importMap.js'; then
+            echo "::error::Схема Payload изменилась, а сгенерированные файлы — нет. Выполните pnpm generate:types && pnpm generate:importmap и закоммитьте результат."
+            exit 1
+          fi
+
+  migrations:
+    name: Миграции БД
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U ci -d ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      # production — чтобы Payload не синхронизировал схему сам (push), а применял только миграции
+      NODE_ENV: production
+      PAYLOAD_SECRET: ci-secret
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Миграции применяются на чистую БД
+        run: pnpm migrate
+
+      - name: Нет изменений схемы без миграции
+        run: |
+          pnpm migrate:create ci-check --skip-empty
+          if [ -n "$(git status --porcelain -- src/migrations)" ]; then
+            git status --porcelain -- src/migrations
+            echo "::error::Коллекции изменились, а миграции нет. Выполните pnpm migrate:create <имя> и закоммитьте её."
+            exit 1
+          fi
+
+  build:
+    name: Сборка
+    runs-on: ubuntu-latest
+    env:
+      PAYLOAD_SECRET: ci-secret
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('src/**') }}
+          restore-keys: next-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+
+      - run: pnpm build
