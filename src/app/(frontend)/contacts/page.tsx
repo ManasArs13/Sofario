@@ -1,13 +1,21 @@
 import type { Metadata } from 'next'
 
 import { LeadForm } from '@/components/LeadForm'
-import { getPayloadClient } from '@/lib/payload'
+import { routeUrl, WorkshopMap, workshopPoint } from '@/components/WorkshopMap'
+import { withCity } from '@/lib/city'
+import { getSiteSettings } from '@/lib/payload'
 
-export const metadata: Metadata = { title: 'Контакты' }
+export async function generateMetadata(): Promise<Metadata> {
+  const s = await getSiteSettings()
+  return {
+    title: 'Контакты',
+    description: withCity('Адрес цеха SOFARIO {город}, телефон и часы работы. Приезжайте посмотреть ткани и готовые диваны.', s.cityIn),
+  }
+}
 
 export default async function ContactsPage() {
-  const payload = await getPayloadClient()
-  const s = await payload.findGlobal({ slug: 'site-settings' })
+  const s = await getSiteSettings()
+  const point = workshopPoint(s.location)
 
   return (
     <div className="container-site py-12">
@@ -36,8 +44,19 @@ export default async function ContactsPage() {
               {s.workingHours}
             </p>
           )}
-          {s.mapEmbedUrl?.startsWith('https://yandex.ru/map-widget/') && (
-            <iframe src={s.mapEmbedUrl} title="Карта" className="mt-6 h-80 w-full rounded-2xl border-0" loading="lazy" />
+          {s.location?.directions && (
+            <p>
+              <span className="block text-sm font-semibold text-caramel">Как добраться</span>
+              {s.location.directions}
+            </p>
+          )}
+          {point && (
+            <>
+              <WorkshopMap point={point} className="mt-6 h-80" />
+              <a href={routeUrl(point)} target="_blank" rel="noreferrer" className="btn btn-primary">
+                Построить маршрут
+              </a>
+            </>
           )}
         </div>
         <LeadForm title="Вызвать замерщика" />

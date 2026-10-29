@@ -4,7 +4,8 @@ import React from 'react'
 
 import { SiteFooter } from '@/components/SiteFooter'
 import { SiteHeader } from '@/components/SiteHeader'
-import { getPayloadClient } from '@/lib/payload'
+import { withCity } from '@/lib/city'
+import { getSiteSettings } from '@/lib/payload'
 
 import './globals.css'
 
@@ -23,18 +24,17 @@ const marcellus = Marcellus({ subsets: ['latin'], weight: '400', variable: '--fo
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const payload = await getPayloadClient()
-  const settings = await payload.findGlobal({ slug: 'site-settings' })
+  const settings = await getSiteSettings()
+  const suffix = withCity(settings.titleSuffix, settings.cityIn) || 'SOFARIO'
   return {
-    title: { default: settings.metaTitle || 'SOFARIO', template: '%s — SOFARIO' },
-    description: settings.metaDescription || undefined,
+    title: { default: withCity(settings.metaTitle, settings.cityIn) || 'SOFARIO', template: `%s — ${suffix}` },
+    description: withCity(settings.metaDescription, settings.cityIn) || undefined,
     icons: { icon: '/favicon.svg', apple: '/apple-touch-icon.png' },
   }
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const payload = await getPayloadClient()
-  const settings = await payload.findGlobal({ slug: 'site-settings' })
+  const settings = await getSiteSettings()
 
   return (
     <html lang="ru" className={`${montserrat.variable} ${cormorant.variable} ${marcellus.variable}`}>

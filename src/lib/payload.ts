@@ -1,9 +1,13 @@
 import config from '@payload-config'
 import { getPayload } from 'payload'
+import { cache } from 'react'
 
 import type { Media } from '@/payload-types'
 
 export const getPayloadClient = () => getPayload({ config })
+
+// Настройки нужны почти каждой странице — в пределах одного запроса читаем их из БД один раз
+export const getSiteSettings = cache(async () => (await getPayloadClient()).findGlobal({ slug: 'site-settings' }))
 
 type MediaSize = 'thumbnail' | 'card' | 'hero'
 

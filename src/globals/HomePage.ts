@@ -1,6 +1,7 @@
 import type { GlobalConfig } from 'payload'
 
 import { anyone, loggedIn } from '../access'
+import { CITY_TOKEN_HINT } from '../lib/city'
 
 export const HomePage: GlobalConfig = {
   slug: 'home-page',
@@ -13,11 +14,18 @@ export const HomePage: GlobalConfig = {
       label: 'Первый экран',
       type: 'group',
       fields: [
-        { name: 'title', label: 'Заголовок', type: 'text', defaultValue: 'Диваны и кресла, сшитые под вас' },
+        {
+          name: 'title',
+          label: 'Заголовок',
+          type: 'text',
+          defaultValue: 'Диваны и кресла, сшитые под вас {город}',
+          admin: { description: CITY_TOKEN_HINT },
+        },
         {
           name: 'subtitle',
           label: 'Подзаголовок',
           type: 'textarea',
+          admin: { description: CITY_TOKEN_HINT },
           defaultValue: 'Любой размер, ткань и наполнитель. Шьём в собственном цеху, привезём образцы тканей бесплатно.',
         },
         { name: 'image', label: 'Фоновое фото', type: 'upload', relationTo: 'media' },

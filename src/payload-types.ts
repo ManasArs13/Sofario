@@ -165,6 +165,13 @@ export interface Category {
    * Оставьте пустым — заполнится автоматически из названия
    */
   slug?: string | null;
+  /**
+   * Если пусто — «Название + город». Можно вставить {город} — подставится, например, «в Самаре» из «Контакты и настройки».
+   */
+  seoTitle?: string | null;
+  /**
+   * Можно вставить {город} — подставится, например, «в Самаре» из «Контакты и настройки».
+   */
   description?: string | null;
   image?: (number | null) | Media;
   /**
@@ -469,6 +476,7 @@ export interface WorksSelect<T extends boolean = true> {
 export interface CategoriesSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
+  seoTitle?: T;
   description?: T;
   image?: T;
   order?: T;
@@ -627,7 +635,13 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
 export interface HomePage {
   id: number;
   hero?: {
+    /**
+     * Можно вставить {город} — подставится, например, «в Самаре» из «Контакты и настройки».
+     */
     title?: string | null;
+    /**
+     * Можно вставить {город} — подставится, например, «в Самаре» из «Контакты и настройки».
+     */
     subtitle?: string | null;
     image?: (number | null) | Media;
     ctaLabel?: string | null;
@@ -648,19 +662,41 @@ export interface HomePage {
  */
 export interface SiteSetting {
   id: number;
+  /**
+   * Для адреса и разметки для поисковиков
+   */
+  city?: string | null;
+  /**
+   * Подставляется вместо {город} в заголовках и описаниях
+   */
+  cityIn?: string | null;
+  region?: string | null;
   phone: string;
   email?: string | null;
   address?: string | null;
   workingHours?: string | null;
-  /**
-   * Только адрес из атрибута src, например https://yandex.ru/map-widget/v1/?...
-   */
-  mapEmbedUrl?: string | null;
+  location?: {
+    lat?: number | null;
+    lng?: number | null;
+    zoom?: number | null;
+    showOnHome?: boolean | null;
+    directions?: string | null;
+  };
   telegram?: string | null;
   whatsapp?: string | null;
   vk?: string | null;
+  /**
+   * Можно вставить {город} — подставится, например, «в Самаре» из «Контакты и настройки».
+   */
   metaTitle?: string | null;
+  /**
+   * Можно вставить {город} — подставится, например, «в Самаре» из «Контакты и настройки».
+   */
   metaDescription?: string | null;
+  /**
+   * Добавляется после названия страницы: «Каталог — <хвост>». Можно вставить {город} — подставится, например, «в Самаре» из «Контакты и настройки».
+   */
+  titleSuffix?: string | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -693,16 +729,28 @@ export interface HomePageSelect<T extends boolean = true> {
  * via the `definition` "site-settings_select".
  */
 export interface SiteSettingsSelect<T extends boolean = true> {
+  city?: T;
+  cityIn?: T;
+  region?: T;
   phone?: T;
   email?: T;
   address?: T;
   workingHours?: T;
-  mapEmbedUrl?: T;
+  location?:
+    | T
+    | {
+        lat?: T;
+        lng?: T;
+        zoom?: T;
+        showOnHome?: T;
+        directions?: T;
+      };
   telegram?: T;
   whatsapp?: T;
   vk?: T;
   metaTitle?: T;
   metaDescription?: T;
+  titleSuffix?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

@@ -1,5 +1,7 @@
 import Link from 'next/link'
 
+import { withCity } from '@/lib/city'
+
 import { brandColors, Sofa } from './brand/Sofa'
 
 import type { SiteSetting } from '@/payload-types'
@@ -19,12 +21,12 @@ export function SiteFooter({ settings }: { settings: SiteSetting }) {
             <Sofa width={52} body={brandColors.cream} cut={brandColors.ink} />
             <span className="font-brand text-2xl tracking-[0.12em] text-cream">SOFARIO</span>
           </div>
-          <p className="mt-3">Мягкая мебель на заказ: диваны, кресла, кровати</p>
+          <p className="mt-3">{withCity('Мягкая мебель на заказ {город}: диваны, кресла, кровати', settings.cityIn)}</p>
         </div>
         <div className="space-y-1">
           <p>{settings.phone}</p>
           {settings.email && <p>{settings.email}</p>}
-          {settings.address && <p>{settings.address}</p>}
+          {(settings.city || settings.address) && <p>{[settings.city, settings.address].filter(Boolean).join(', ')}</p>}
           {settings.workingHours && <p>{settings.workingHours}</p>}
         </div>
         <div className="space-y-1">
